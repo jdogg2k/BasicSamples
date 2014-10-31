@@ -1,0 +1,89 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+    <LinearLayout
+        android:id="@+id/completePanel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:orientation="horizontal" android:layout_weight=".6" >
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:orientation="vertical" android:layout_weight=".5"
+            android:background="@color/backplayer">
+            <TextView
+                android:id="@+id/playerName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/margin_small"
+                android:textAppearance="@style/GuessWordText"
+                android:textSize="18dp"
+                android:textStyle="bold"
+                android:textColor="#ff0041a6" />
+            <ListView
+                android:id="@+id/playerList"
+                android:layout_height="wrap_content"
+                android:layout_width="match_parent">
+            </ListView>
+
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="wrap_content" android:background="@color/backopponent"
+            android:layout_height="wrap_content" android:orientation="vertical" android:layout_weight=".5">
+            <TextView
+                android:id="@+id/opponentName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_margin="@dimen/margin_small"
+                android:textAppearance="@style/GuessWordText"
+                android:textSize="18dp"
+                android:textStyle="bold" />
+            <ListView
+                android:id="@+id/opponentList"
+                android:layout_height="wrap_content"
+                android:layout_width="match_parent">
+            </ListView>
+        </LinearLayout>
+
+
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:baselineAligned="false"
+    android:layout_height="40dp" android:orientation="horizontal">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent" android:orientation="horizontal" android:layout_weight="1">
+            <TextView
+                android:id="@+id/playerScore"
+                android:layout_width="wrap_content" android:padding="2dp"
+                android:layout_height="fill_parent" android:textSize="26dp"
+                android:textStyle="bold" />
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/winnerP"
+                android:src="@drawable/winner"
+                android:focusableInTouchMode="false"
+                android:visibility="gone" />
+            </LinearLayout>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent" android:orientation="horizontal" android:layout_weight=".5" >
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="wrap_content" android:layout_weight="1" />
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/winnerO"
+                android:src="@drawable/winner"
+                android:focusableInTouchMode="false"
+                android:visibility="gone" />
+
+            <TextView
+            android:id="@+id/opponentScore"
+            android:layout_width="wrap_content" android:padding="2dp"
+            android:layout_height="fill_parent" android:textSize="26dp"
+            android:textStyle="bold" android:gravity="end" />
+        </LinearLayout>
+
+    </LinearLayout>
+</LinearLayout>

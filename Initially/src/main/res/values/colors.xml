@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name = "darkred">#7f0000</color>
+    <color name = "green">#458B00</color>
+    <color name = "backplayer">#ebe6faff</color>
+    <color name = "backopponent">#ffdde3de</color>
+</resources>
