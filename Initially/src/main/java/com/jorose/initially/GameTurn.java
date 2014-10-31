@@ -18,8 +18,14 @@ public class GameTurn {
     public static final String TAG = "EBTurn";
 
     public String initials = "";
-    public String correctGuesses = "";
+    public String p1_guesses = "";
+    public String p2_guesses = "";
+    public String p1_name = "";
+    public String p2_name = "";
+    public String winner = "";
     public int turnCounter;
+    public int winScore;
+    public int loseScore;
 
     public GameTurn() {
     }
@@ -30,8 +36,14 @@ public class GameTurn {
 
         try {
             retVal.put("initials", initials);
-            retVal.put("correctGuesses", correctGuesses);
             retVal.put("turnCounter", turnCounter);
+            retVal.put("winScore", winScore);
+            retVal.put("loseScore", loseScore);
+            retVal.put("p1_guesses", p1_guesses);
+            retVal.put("p2_guesses", p2_guesses);
+            retVal.put("p1_name", p1_name);
+            retVal.put("p2_name", p2_name);
+            retVal.put("winner", winner);
 
         } catch (JSONException e) {
             // TODO Auto-generated catch block
@@ -71,11 +83,29 @@ public class GameTurn {
             if (obj.has("initials")) {
                 retVal.initials = obj.getString("initials");
             }
-            if (obj.has("correctGuesses")) {
-                retVal.correctGuesses = obj.getString("correctGuesses");
-            }
             if (obj.has("turnCounter")) {
                 retVal.turnCounter = obj.getInt("turnCounter");
+            }
+            if (obj.has("loseScore")) {
+                retVal.loseScore = obj.getInt("loseScore");
+            }
+            if (obj.has("winScore")) {
+                retVal.winScore = obj.getInt("winScore");
+            }
+            if (obj.has("p1_guesses")) {
+                retVal.p1_guesses = obj.getString("p1_guesses");
+            }
+            if (obj.has("p2_guesses")) {
+                retVal.p2_guesses = obj.getString("p2_guesses");
+            }
+            if (obj.has("p1_name")) {
+                retVal.p1_name = obj.getString("p1_name");
+            }
+            if (obj.has("p2_name")) {
+                retVal.p2_name = obj.getString("p2_name");
+            }
+            if (obj.has("winner")) {
+                retVal.winner = obj.getString("winner");
             }
 
         } catch (JSONException e) {
