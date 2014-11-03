@@ -17,6 +17,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -366,28 +367,36 @@ public static Properties properties = new Properties();
 
     // Finish the game. Sometimes, this is your only choice.
     public void onFinishClicked(View view) {
+        isDoingTurn = true;
+        ArrayList<String> oppArray = new ArrayList<String>(Arrays.asList(opponentGuesses.split(",")));
+        showScore(Games.Players.getCurrentPlayer(mGoogleApiClient).getDisplayName(), getOpponentName(), correctGuesses, oppArray);
+    }
+
+    public void showScore(String pName, String oName, ArrayList<String> pGuesses, ArrayList<String> oGuesses){
+
+        pFinalScore = 0;
+        oFinalScore = 0;
+        matchResult = "";
 
         DialogFragment newFragment = new FinalScoreDialogFragment();
         FragmentManager fm = getFragmentManager();
 
-        ArrayList<String> oppArray = new ArrayList<String>(Arrays.asList(opponentGuesses.split(",")));
-
         Bundle args = new Bundle();
-        args.putString("pName", Games.Players.getCurrentPlayer(mGoogleApiClient).getDisplayName());
-        args.putString("oName", getOpponentName());
-        args.putStringArrayList("pGuesses", correctGuesses);
-        args.putStringArrayList("oGuesses", oppArray);
+        args.putString("pName", pName);
+        args.putString("oName", oName);
+        args.putStringArrayList("pGuesses", pGuesses);
+        args.putStringArrayList("oGuesses", oGuesses);
 
 
 
-        for(String s : correctGuesses)  {
-            if (!oppArray.contains(s)){
+        for(String s : pGuesses)  {
+            if (!oGuesses.contains(s)){
                 pFinalScore++;
             }
         }
 
-        for(String s : oppArray)  {
-            if (!correctGuesses.contains(s)){
+        for(String s : oGuesses)  {
+            if (!pGuesses.contains(s)){
                 oFinalScore++;
             }
         }
@@ -405,73 +414,75 @@ public static Properties properties = new Properties();
 
         newFragment.setArguments(args);
         newFragment.show(fm, "finalscore");
-
     }
 
     public void endMatch(){
-        showSpinner();
 
-        String playerId = Games.Players.getCurrentPlayerId(mGoogleApiClient);
-        String myParticipantId = mMatch.getParticipantId(playerId);
+        if (isDoingTurn) {
+            showSpinner();
 
-        int pResult = 0;
-        int oResult = 0;
-        int pPosition = 0;
-        int oPosition = 0;
+            String playerId = Games.Players.getCurrentPlayerId(mGoogleApiClient);
+            String myParticipantId = mMatch.getParticipantId(playerId);
 
-        if (matchResult.equals("WIN")) {
-            pResult = ParticipantResult.MATCH_RESULT_WIN;
-            pPosition = 1;
-            oResult = ParticipantResult.MATCH_RESULT_LOSS;
-            oPosition = 2;
-            mTurnData.winScore = pFinalScore;
-            mTurnData.loseScore = oFinalScore;
-            if (myParticipantId.equals("p_1")){
-                mTurnData.winner = "p_1";
+            int pResult = 0;
+            int oResult = 0;
+            int pPosition = 0;
+            int oPosition = 0;
+
+            if (matchResult.equals("WIN")) {
+                pResult = ParticipantResult.MATCH_RESULT_WIN;
+                pPosition = 1;
+                oResult = ParticipantResult.MATCH_RESULT_LOSS;
+                oPosition = 2;
+                mTurnData.winScore = pFinalScore;
+                mTurnData.loseScore = oFinalScore;
+                if (myParticipantId.equals("p_1")) {
+                    mTurnData.winner = "p_1";
+                } else {
+                    mTurnData.winner = "p_2";
+                }
+
+            } else if (matchResult.equals("LOSS")) {
+                pResult = ParticipantResult.MATCH_RESULT_LOSS;
+                pPosition = 2;
+                oResult = ParticipantResult.MATCH_RESULT_WIN;
+                oPosition = 1;
+                mTurnData.winScore = oFinalScore;
+                mTurnData.loseScore = pFinalScore;
+                if (myParticipantId.equals("p_1")) {
+                    mTurnData.winner = "p_2";
+                } else {
+                    mTurnData.winner = "p_1";
+                }
             } else {
-                mTurnData.winner = "p_2";
+                pResult = ParticipantResult.MATCH_RESULT_TIE;
+                pPosition = 1;
+                oResult = ParticipantResult.MATCH_RESULT_TIE;
+                oPosition = 1;
+                mTurnData.winScore = oFinalScore;
+                mTurnData.loseScore = pFinalScore;
+                mTurnData.winner = "tie";
             }
 
-        } else if (matchResult.equals("LOSS")) {
-            pResult = ParticipantResult.MATCH_RESULT_LOSS;
-            pPosition = 2;
-            oResult = ParticipantResult.MATCH_RESULT_WIN;
-            oPosition = 1;
-            mTurnData.winScore = oFinalScore;
-            mTurnData.loseScore = pFinalScore;
-            if (myParticipantId.equals("p_1")){
-                mTurnData.winner = "p_2";
+            ParticipantResult opponentResult = new ParticipantResult(opponentID, oResult, oPosition);
+            ParticipantResult playerResult = new ParticipantResult(myID, pResult, pPosition);
+
+            if (myParticipantId.equals("p_2")) {
+                mTurnData.p2_guesses = correctGuesses.toString().replace("[", "").replace("]", "").replace(", ", ",");
+                mTurnData.p2_name = Games.Players.getCurrentPlayer(mGoogleApiClient).getDisplayName();
             } else {
-                mTurnData.winner = "p_1";
+                mTurnData.p1_guesses = correctGuesses.toString().replace("[", "").replace("]", "").replace(", ", ",");
+                mTurnData.p1_name = Games.Players.getCurrentPlayer(mGoogleApiClient).getDisplayName();
             }
-        } else {
-            pResult = ParticipantResult.MATCH_RESULT_TIE;
-            pPosition = 1;
-            oResult = ParticipantResult.MATCH_RESULT_TIE;
-            oPosition = 1;
-            mTurnData.winScore = oFinalScore;
-            mTurnData.loseScore = pFinalScore;
-            mTurnData.winner = "tie";
+
+            Games.TurnBasedMultiplayer.finishMatch(mGoogleApiClient, mMatch.getMatchId(), mTurnData.persist(), playerResult, opponentResult)
+                    .setResultCallback(new ResultCallback<TurnBasedMultiplayer.UpdateMatchResult>() {
+                        @Override
+                        public void onResult(TurnBasedMultiplayer.UpdateMatchResult result) {
+                            processResult(result);
+                        }
+                    });
         }
-
-        ParticipantResult opponentResult = new ParticipantResult(opponentID, oResult, oPosition);
-        ParticipantResult playerResult = new ParticipantResult(myID, pResult, pPosition);
-
-        if (myParticipantId.equals("p_2")) {
-            mTurnData.p2_guesses = correctGuesses.toString().replace("[", "").replace("]", "").replace(", ", ",");
-            mTurnData.p2_name = Games.Players.getCurrentPlayer(mGoogleApiClient).getDisplayName();
-        } else {
-            mTurnData.p1_guesses = correctGuesses.toString().replace("[", "").replace("]", "").replace(", ", ",");
-            mTurnData.p1_name = Games.Players.getCurrentPlayer(mGoogleApiClient).getDisplayName();
-        }
-
-        Games.TurnBasedMultiplayer.finishMatch(mGoogleApiClient, mMatch.getMatchId(), mTurnData.persist(), playerResult,opponentResult )
-                .setResultCallback(new ResultCallback<TurnBasedMultiplayer.UpdateMatchResult>() {
-                    @Override
-                    public void onResult(TurnBasedMultiplayer.UpdateMatchResult result) {
-                        processResult(result);
-                    }
-                });
 
         isDoingTurn = false;
         setViewVisibility();
@@ -505,7 +516,7 @@ public static Properties properties = new Properties();
                         processResult(result);
                     }
                 });
-
+        Toast.makeText(this, "Names Submitted - Your opponent will finish the match", TOAST_DELAY).show();
         mTurnData = null;
     }
 
@@ -576,7 +587,11 @@ public static Properties properties = new Properties();
                 GameTurn finalData = GameTurn.unpersist(mMatch.getData());
 
                 if (turnStatus == TurnBasedMatch.MATCH_TURN_STATUS_COMPLETE) {
-                    String winner = "";
+
+
+
+                    /*String winner = "";
+
                     String messageText = "This game is over; ";
                     if (finalData.winner.equals("p_2")){
                         winner = finalData.p2_name + " beat " + finalData.p1_name + " " + finalData.winScore + "-" + finalData.loseScore;
@@ -588,17 +603,25 @@ public static Properties properties = new Properties();
 
 
                     showWarning(
-                            "COMPLETED", messageText + " " + winner);
-                    break;
-                }
-                //bugfix for finishing unfinished matches
-                Games.TurnBasedMultiplayer.finishMatch(mGoogleApiClient, mMatch.getMatchId())
+                            "COMPLETED", messageText + " " + winner);*/
+
+                } else {
+                    //bugfix for finishing unfinished matches
+                    Games.TurnBasedMultiplayer.finishMatch(mGoogleApiClient, mMatch.getMatchId())
                             .setResultCallback(new ResultCallback<TurnBasedMultiplayer.UpdateMatchResult>() {
                                 @Override
                                 public void onResult(TurnBasedMultiplayer.UpdateMatchResult result) {
                                     processResult(result);
                                 }
                             });
+
+                }
+
+                ArrayList<String> playerArray = new ArrayList<String>(Arrays.asList(finalData.p1_guesses.split(",")));
+                ArrayList<String> oppArray = new ArrayList<String>(Arrays.asList(finalData.p2_guesses.split(",")));
+
+                showScore(finalData.p1_name, finalData.p2_name, playerArray, oppArray);
+
                 break;
         }
 
@@ -620,7 +643,9 @@ public static Properties properties = new Properties();
                     }
                     lastTurn = true;
                 }
-                turnReset();
+                if (isDoingTurn) {
+                    turnReset();
+                }
                 return;
             case TurnBasedMatch.MATCH_TURN_STATUS_THEIR_TURN:
                 // Should return results.
@@ -646,7 +671,7 @@ public static Properties properties = new Properties();
 
                 String[] names = params[0].split("\\s+");
 
-                if ((names[0].toString().charAt(0) == initial1) && (names[1].toString().charAt(0) == initial2)) {
+                if ((names[0].charAt(0) == initial1) && (names[1].charAt(0) == initial2)) {
 
                     HttpTransport httpTransport = new NetHttpTransport();
                     HttpRequestFactory requestFactory = httpTransport.createRequestFactory();
@@ -779,6 +804,12 @@ public static Properties properties = new Properties();
 
         Button search = (Button) findViewById(R.id.searchButton);
         search.setEnabled(true);
+
+        RelativeLayout completionPanel = (RelativeLayout) findViewById(R.id.completePanel);
+        completionPanel.setVisibility(View.INVISIBLE);
+
+        RelativeLayout finishPanel = (RelativeLayout) findViewById(R.id.finishPanel);
+        finishPanel.setVisibility(View.INVISIBLE);
 
         clockSound.start();
 
