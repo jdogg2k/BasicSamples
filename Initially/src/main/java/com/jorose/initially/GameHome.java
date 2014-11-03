@@ -24,6 +24,8 @@ import android.widget.Toast;
 import com.google.android.gms.games.Game;
 import com.google.android.gms.games.Player;
 import com.google.android.gms.games.Players;
+import com.google.android.gms.games.leaderboard.LeaderboardVariant;
+import com.google.android.gms.games.leaderboard.Leaderboards;
 import com.google.android.gms.games.multiplayer.Participant;
 import com.google.android.gms.games.multiplayer.ParticipantResult;
 import com.google.api.client.http.GenericUrl;
@@ -124,6 +126,7 @@ public static Properties properties = new Properties();
     private static final int RC_SIGN_IN = 9001;
     final static int RC_SELECT_PLAYERS = 10000;
     final static int RC_LOOK_AT_MATCHES = 10001;
+    private static final int RC_UNUSED = 5001;
 
     // How long to show toasts.
     final static int TOAST_DELAY = Toast.LENGTH_SHORT;
@@ -302,6 +305,10 @@ public static Properties properties = new Properties();
         startActivityForResult(intent, RC_LOOK_AT_MATCHES);
     }
 
+    public void onViewLeadersClicked(View view) {
+        Intent intent = Games.Leaderboards.getLeaderboardIntent(mGoogleApiClient, getResources().getString(R.string.leaderboard_number_of_wins));
+        startActivityForResult(intent, RC_UNUSED);
+    }
     // Open the create-game UI. You will get back an onActivityResult
     // and figure out what to do.
     public void onStartMatchClicked(View view) {
@@ -442,6 +449,15 @@ public static Properties properties = new Properties();
                     mTurnData.winner = "p_2";
                 }
 
+                //update win count for current player
+                Games.Leaderboards.loadCurrentPlayerLeaderboardScore(mGoogleApiClient, getResources().getString(R.string.leaderboard_number_of_wins), LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC)
+                        .setResultCallback(new ResultCallback<Leaderboards.LoadPlayerScoreResult>() {
+                            @Override
+                            public void onResult(Leaderboards.LoadPlayerScoreResult result) {
+                                processWin(result);
+                            }
+                        });
+
             } else if (matchResult.equals("LOSS")) {
                 pResult = ParticipantResult.MATCH_RESULT_LOSS;
                 pPosition = 2;
@@ -570,6 +586,9 @@ public static Properties properties = new Properties();
         int status = match.getStatus();
         int turnStatus = match.getTurnStatus();
 
+        String playerId = Games.Players.getCurrentPlayerId(mGoogleApiClient);
+        String myParticipantId = mMatch.getParticipantId(playerId);
+
         switch (status) {
             case TurnBasedMatch.MATCH_STATUS_CANCELED:
                 showWarning("Canceled!", "This game was canceled!");
@@ -590,23 +609,20 @@ public static Properties properties = new Properties();
 
 
 
-                    /*String winner = "";
-
-                    String messageText = "This game is over; ";
-                    if (finalData.winner.equals("p_2")){
-                        winner = finalData.p2_name + " beat " + finalData.p1_name + " " + finalData.winScore + "-" + finalData.loseScore;
-                    } else if (finalData.winner.equals("p_1")) {
-                        winner = finalData.p1_name + " beat " + finalData.p2_name + " " + finalData.winScore + "-" + finalData.loseScore;
-                    } else { //tie
-                        winner = finalData.p1_name + " and " + finalData.p2_name + " TIED by a score of " + finalData.winScore + "-" + finalData.loseScore;
+                } else {
+                    //award win if game creator wins
+                    if (myParticipantId.equals("p_1") && finalData.winner.equals("p_1")){
+                        //update win count for current player
+                        Games.Leaderboards.loadCurrentPlayerLeaderboardScore(mGoogleApiClient, getResources().getString(R.string.leaderboard_number_of_wins), LeaderboardVariant.TIME_SPAN_ALL_TIME, LeaderboardVariant.COLLECTION_PUBLIC)
+                                .setResultCallback(new ResultCallback<Leaderboards.LoadPlayerScoreResult>() {
+                                    @Override
+                                    public void onResult(Leaderboards.LoadPlayerScoreResult result) {
+                                        processWin(result);
+                                    }
+                                });
                     }
 
-
-                    showWarning(
-                            "COMPLETED", messageText + " " + winner);*/
-
-                } else {
-                    //bugfix for finishing unfinished matches
+                    //update unfinished match
                     Games.TurnBasedMultiplayer.finishMatch(mGoogleApiClient, mMatch.getMatchId())
                             .setResultCallback(new ResultCallback<TurnBasedMultiplayer.UpdateMatchResult>() {
                                 @Override
@@ -634,8 +650,6 @@ public static Properties properties = new Properties();
                     setInitials("new");
                 } else {
                     setInitials(mTurnData.initials);
-                    String playerId = Games.Players.getCurrentPlayerId(mGoogleApiClient);
-                    String myParticipantId = mMatch.getParticipantId(playerId);
                     if (myParticipantId.equals("p_2")) {
                         opponentGuesses = mTurnData.p1_guesses;
                     } else {
@@ -1137,6 +1151,18 @@ public static Properties properties = new Properties();
         }
 
         setViewVisibility();
+    }
+
+    private boolean isScoreResultValid(final Leaderboards.LoadPlayerScoreResult scoreResult) {
+        return scoreResult != null && GamesStatusCodes.STATUS_OK == scoreResult.getStatus().getStatusCode() && scoreResult.getScore() != null;
+    }
+           
+    public void processWin(Leaderboards.LoadPlayerScoreResult result) {
+        long curScore = 0;
+        if (isScoreResultValid(result)) curScore = result.getScore().getRawScore();
+        curScore++;
+        //update win count for current player
+        Games.Leaderboards.submitScore(mGoogleApiClient, getResources().getString(R.string.leaderboard_number_of_wins), curScore);
     }
 
     // Handle notification events.
