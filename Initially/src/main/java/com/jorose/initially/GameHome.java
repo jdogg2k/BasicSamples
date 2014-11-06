@@ -4,7 +4,7 @@ import android.app.Activity;
 import android.app.DialogFragment;
 import android.app.FragmentManager;
 import android.content.Context;
-import android.content.SharedPreferences;
+
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -13,7 +13,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.ArrayAdapter;
+
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -21,9 +21,6 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.games.Game;
-import com.google.android.gms.games.Player;
-import com.google.android.gms.games.Players;
 import com.google.android.gms.games.leaderboard.LeaderboardVariant;
 import com.google.android.gms.games.leaderboard.Leaderboards;
 import com.google.android.gms.games.multiplayer.Participant;
@@ -37,8 +34,7 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
+
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -74,13 +70,10 @@ public class GameHome extends Activity
         OnInvitationReceivedListener, OnTurnBasedMatchUpdateReceivedListener,
         View.OnClickListener, FinalScoreDialogFragment.FinalScoreDialogListener{
 
-public static Properties properties = new Properties();
     PersonSearch pSearch;
     boolean personTrue = false;
     char initial1;
     char initial2;
-    private ListView list;
-    private ArrayList<Guess> arrayOfGuesses;
     private GuessesAdapter adapter;
     private MediaPlayer clockSound;
     private MediaPlayer correctSound;
@@ -111,8 +104,6 @@ public static Properties properties = new Properties();
     private TurnBasedMatch mTurnBasedMatch;
 
     // Local convenience pointers
-    public TextView mDataView;
-    public TextView mTurnTextView;
     public TextView mInitialsView;
     public String myID;
     public String opponentID;
@@ -175,11 +166,11 @@ public static Properties properties = new Properties();
        mInitialsView = ((TextView) findViewById(R.id.textInitials));
         //mTurnTextView = ((TextView) findViewById(R.id.turn_counter_view));
 
-        arrayOfGuesses = new ArrayList<Guess>();
+        ArrayList<Guess> arrayOfGuesses = new ArrayList<Guess>();
         // Create the adapter to convert the array to views
         adapter = new GuessesAdapter(this, arrayOfGuesses);
 
-        list=(ListView)this.findViewById(R.id.mainListView);
+        ListView list = (ListView) this.findViewById(R.id.mainListView);
         list.setAdapter(adapter);
 
         Button search = (Button) findViewById(R.id.searchButton);
@@ -337,61 +328,6 @@ public static Properties properties = new Properties();
         startActivityForResult(intent, RC_SELECT_PLAYERS);
     }
 
-    // Create a one-on-one automatch game.
-    public void onQuickMatchClicked(View view) {
-
-        Bundle autoMatchCriteria = RoomConfig.createAutoMatchCriteria(
-                1, 1, 0);
-
-        TurnBasedMatchConfig tbmc = TurnBasedMatchConfig.builder()
-                .setAutoMatchCriteria(autoMatchCriteria).build();
-
-        showSpinner();
-
-        // Start the match
-        ResultCallback<TurnBasedMultiplayer.InitiateMatchResult> cb = new ResultCallback<TurnBasedMultiplayer.InitiateMatchResult>() {
-            @Override
-            public void onResult(TurnBasedMultiplayer.InitiateMatchResult result) {
-                processResult(result);
-            }
-        };
-        Games.TurnBasedMultiplayer.createMatch(mGoogleApiClient, tbmc).setResultCallback(cb);
-    }
-
-    // In-game controls
-
-    // Cancel the game. Should possibly wait until the game is canceled before
-    // giving up on the view.
-    public void onCancelClicked(View view) {
-        showSpinner();
-        Games.TurnBasedMultiplayer.cancelMatch(mGoogleApiClient, mMatch.getMatchId())
-                .setResultCallback(new ResultCallback<TurnBasedMultiplayer.CancelMatchResult>() {
-                    @Override
-                    public void onResult(TurnBasedMultiplayer.CancelMatchResult result) {
-                        processResult(result);
-                    }
-                });
-        isDoingTurn = false;
-        setViewVisibility();
-    }
-
-    // Leave the game during your turn. Note that there is a separate
-    // Games.TurnBasedMultiplayer.leaveMatch() if you want to leave NOT on your turn.
-    public void onLeaveClicked(View view) {
-        showSpinner();
-        String nextParticipantId = getNextParticipantId();
-
-        Games.TurnBasedMultiplayer.leaveMatchDuringTurn(mGoogleApiClient, mMatch.getMatchId(),
-                nextParticipantId).setResultCallback(
-                new ResultCallback<TurnBasedMultiplayer.LeaveMatchResult>() {
-                    @Override
-                    public void onResult(TurnBasedMultiplayer.LeaveMatchResult result) {
-                        processResult(result);
-                    }
-                });
-        setViewVisibility();
-    }
-
     // Finish the game. Sometimes, this is your only choice.
     public void onFinishClicked(View view) {
         isDoingTurn = true;
@@ -454,10 +390,10 @@ public static Properties properties = new Properties();
             String playerId = Games.Players.getCurrentPlayerId(mGoogleApiClient);
             String myParticipantId = mMatch.getParticipantId(playerId);
 
-            int pResult = 0;
-            int oResult = 0;
-            int pPosition = 0;
-            int oPosition = 0;
+            int pResult;
+            int oResult;
+            int pPosition;
+            int oPosition;
 
             if (matchResult.equals("WIN")) {
                 pResult = ParticipantResult.MATCH_RESULT_WIN;
@@ -481,6 +417,7 @@ public static Properties properties = new Properties();
                             }
                         });
                 Games.Achievements.unlock(mGoogleApiClient, getResources().getString(R.string.achievement_first_win));
+                highSound.start();
             } else if (matchResult.equals("LOSS")) {
                 pResult = ParticipantResult.MATCH_RESULT_LOSS;
                 pPosition = 2;
@@ -631,11 +568,7 @@ public static Properties properties = new Properties();
 
                 GameTurn finalData = GameTurn.unpersist(mMatch.getData());
 
-                if (turnStatus == TurnBasedMatch.MATCH_TURN_STATUS_COMPLETE) {
-
-
-
-                } else {
+                if (turnStatus != TurnBasedMatch.MATCH_TURN_STATUS_COMPLETE) {
                     //award win if game creator wins
                     if (myParticipantId.equals("p_1") && finalData.winner.equals("p_1")){
                         //update win count for current player
@@ -647,6 +580,7 @@ public static Properties properties = new Properties();
                                     }
                                 });
                         Games.Achievements.unlock(mGoogleApiClient, getResources().getString(R.string.achievement_first_win));
+                        highSound.start();
                     }
 
                     //update unfinished match
@@ -730,8 +664,8 @@ public static Properties properties = new Properties();
 
                     if (results.size() > 0) {
                         personTrue = false;
-                        for (int j = 0; j < results.size(); j++) {
-                            JSONObject obj = (JSONObject) results.get(j);
+                        for (Object result : results) {
+                            JSONObject obj = (JSONObject) result;
                             String name = (String) obj.get("name");
                             if (name.equals(params[0])) { //valid name
                                 if (!correctGuesses.contains(name)) {  //did we already guess it?
@@ -792,10 +726,7 @@ public static Properties properties = new Properties();
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-        if (id == R.id.action_settings) {
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
+        return id == R.id.action_settings || super.onOptionsItemSelected(item);
     }
 
     private String formatTime(long millis){
@@ -890,10 +821,12 @@ public static Properties properties = new Properties();
         //check guesses for achievement
         if (correctGuesses.size() >= 5){
             Games.Achievements.unlock(mGoogleApiClient, getResources().getString(R.string.achievement_five_spot));
+            highSound.start();
         }
 
         if (correctGuesses.size() >= 10){
             Games.Achievements.unlock(mGoogleApiClient, getResources().getString(R.string.achievement_titanic_ten));
+            highSound.start();
         }
 
 
@@ -1003,7 +936,7 @@ public static Properties properties = new Properties();
                     .getStringArrayListExtra(Games.EXTRA_PLAYER_IDS);
 
             // get automatch criteria
-            Bundle autoMatchCriteria = null;
+            Bundle autoMatchCriteria;
 
             int minAutoMatchPlayers = data.getIntExtra(
                     Multiplayer.EXTRA_MIN_AUTOMATCH_PLAYERS, 0);
@@ -1136,24 +1069,11 @@ public static Properties properties = new Properties();
 
     }
 
-    private void processResult(TurnBasedMultiplayer.CancelMatchResult result) {
-        dismissSpinner();
-
-        if (!checkStatusCode(null, result.getStatus().getStatusCode())) {
-            return;
-        }
-
-        isDoingTurn = false;
-
-        showWarning("Match",
-                "This match is canceled.  All other players will have their game ended.");
-    }
-
     private void processResult(TurnBasedMultiplayer.InitiateMatchResult result) {
         TurnBasedMatch match = result.getMatch();
         dismissSpinner();
 
-        if (!checkStatusCode(match, result.getStatus().getStatusCode())) {
+        if (!checkStatusCode(result.getStatus().getStatusCode())) {
             return;
         }
 
@@ -1167,21 +1087,10 @@ public static Properties properties = new Properties();
     }
 
 
-    private void processResult(TurnBasedMultiplayer.LeaveMatchResult result) {
-        TurnBasedMatch match = result.getMatch();
-        dismissSpinner();
-        if (!checkStatusCode(match, result.getStatus().getStatusCode())) {
-            return;
-        }
-        isDoingTurn = (match.getTurnStatus() == TurnBasedMatch.MATCH_TURN_STATUS_MY_TURN);
-        showWarning("Left", "You've left this match.");
-    }
-
-
     public void processResult(TurnBasedMultiplayer.UpdateMatchResult result) {
         TurnBasedMatch match = result.getMatch();
         dismissSpinner();
-        if (!checkStatusCode(match, result.getStatus().getStatusCode())) {
+        if (!checkStatusCode(result.getStatus().getStatusCode())) {
             return;
         }
         if (match.canRematch()) {
@@ -1236,15 +1145,14 @@ public static Properties properties = new Properties();
 
     }
 
-    public void showErrorMessage(TurnBasedMatch match, int statusCode,
-                                 int stringId) {
+    public void showErrorMessage(int stringId) {
 
         showWarning("Warning", getResources().getString(stringId));
     }
 
     // Returns false if something went wrong, probably. This should handle
     // more cases, and probably report more accurate results.
-    private boolean checkStatusCode(TurnBasedMatch match, int statusCode) {
+    private boolean checkStatusCode(int statusCode) {
         switch (statusCode) {
             case GamesStatusCodes.STATUS_OK:
                 return true;
@@ -1259,34 +1167,34 @@ public static Properties properties = new Properties();
                 // it from your final application.
                 return true;
             case GamesStatusCodes.STATUS_MULTIPLAYER_ERROR_NOT_TRUSTED_TESTER:
-                showErrorMessage(match, statusCode,
+                showErrorMessage(
                         R.string.status_multiplayer_error_not_trusted_tester);
                 break;
             case GamesStatusCodes.STATUS_MATCH_ERROR_ALREADY_REMATCHED:
-                showErrorMessage(match, statusCode,
+                showErrorMessage(
                         R.string.match_error_already_rematched);
                 break;
             case GamesStatusCodes.STATUS_NETWORK_ERROR_OPERATION_FAILED:
-                showErrorMessage(match, statusCode,
+                showErrorMessage(
                         R.string.network_error_operation_failed);
                 break;
             case GamesStatusCodes.STATUS_CLIENT_RECONNECT_REQUIRED:
-                showErrorMessage(match, statusCode,
+                showErrorMessage(
                         R.string.client_reconnect_required);
                 break;
             case GamesStatusCodes.STATUS_INTERNAL_ERROR:
-                showErrorMessage(match, statusCode, R.string.internal_error);
+                showErrorMessage(R.string.internal_error);
                 break;
             case GamesStatusCodes.STATUS_MATCH_ERROR_INACTIVE_MATCH:
-                showErrorMessage(match, statusCode,
+                showErrorMessage(
                         R.string.match_error_inactive_match);
                 break;
             case GamesStatusCodes.STATUS_MATCH_ERROR_LOCALLY_MODIFIED:
-                showErrorMessage(match, statusCode,
+                showErrorMessage(
                         R.string.match_error_locally_modified);
                 break;
             default:
-                showErrorMessage(match, statusCode, R.string.unexpected_status);
+                showErrorMessage(R.string.unexpected_status);
                 Log.d(TAG, "Did not have warning or string to deal with: "
                         + statusCode);
         }
