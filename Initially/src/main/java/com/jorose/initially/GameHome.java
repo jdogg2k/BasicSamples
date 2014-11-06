@@ -119,6 +119,7 @@ public static Properties properties = new Properties();
     public String matchResult;
     public int pFinalScore = 0;
     public int oFinalScore = 0;
+    private boolean timerIsRunning = false;
 
     private AlertDialog mAlertDialog;
 
@@ -126,6 +127,7 @@ public static Properties properties = new Properties();
     private static final int RC_SIGN_IN = 9001;
     final static int RC_SELECT_PLAYERS = 10000;
     final static int RC_LOOK_AT_MATCHES = 10001;
+    final static int RC_VIEW_ACHIEVEMENTS = 10010;
     private static final int RC_UNUSED = 5001;
 
     // How long to show toasts.
@@ -188,6 +190,17 @@ public static Properties properties = new Properties();
                 EditText uText = (EditText) findViewById(R.id.searchName);
                 pSearch = new PersonSearch();
                 pSearch.execute(uText.getText().toString());
+            }
+        });
+
+        Button giveup = (Button) findViewById(R.id.giveupButton);
+        giveup.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                if (timerIsRunning) {
+                    turnOver();
+                }
             }
         });
 
@@ -309,6 +322,13 @@ public static Properties properties = new Properties();
         Intent intent = Games.Leaderboards.getLeaderboardIntent(mGoogleApiClient, getResources().getString(R.string.leaderboard_number_of_wins));
         startActivityForResult(intent, RC_UNUSED);
     }
+
+    public void onViewAchieveClicked(View view) {
+        Intent intent = Games.Achievements.getAchievementsIntent(mGoogleApiClient);
+        startActivityForResult(intent, RC_VIEW_ACHIEVEMENTS);
+    }
+
+
     // Open the create-game UI. You will get back an onActivityResult
     // and figure out what to do.
     public void onStartMatchClicked(View view) {
@@ -395,16 +415,19 @@ public static Properties properties = new Properties();
         args.putStringArrayList("oGuesses", oGuesses);
 
 
-
-        for(String s : pGuesses)  {
-            if (!oGuesses.contains(s)){
-                pFinalScore++;
+        if (pGuesses.size() > 0) {
+            for (String s : pGuesses) {
+                if (!oGuesses.contains(s)) {
+                    pFinalScore++;
+                }
             }
         }
 
-        for(String s : oGuesses)  {
-            if (!pGuesses.contains(s)){
-                oFinalScore++;
+        if (oGuesses.size() > 0) {
+            for (String s : oGuesses) {
+                if (!pGuesses.contains(s)) {
+                    oFinalScore++;
+                }
             }
         }
 
@@ -457,7 +480,7 @@ public static Properties properties = new Properties();
                                 processWin(result);
                             }
                         });
-
+                Games.Achievements.unlock(mGoogleApiClient, getResources().getString(R.string.achievement_first_win));
             } else if (matchResult.equals("LOSS")) {
                 pResult = ParticipantResult.MATCH_RESULT_LOSS;
                 pPosition = 2;
@@ -498,8 +521,11 @@ public static Properties properties = new Properties();
                             processResult(result);
                         }
                     });
+
         }
 
+        lastTurn = false;
+        opponentGuesses = "";
         isDoingTurn = false;
         setViewVisibility();
     }
@@ -620,6 +646,7 @@ public static Properties properties = new Properties();
                                         processWin(result);
                                     }
                                 });
+                        Games.Achievements.unlock(mGoogleApiClient, getResources().getString(R.string.achievement_first_win));
                     }
 
                     //update unfinished match
@@ -706,8 +733,10 @@ public static Properties properties = new Properties();
                         for (int j = 0; j < results.size(); j++) {
                             JSONObject obj = (JSONObject) results.get(j);
                             String name = (String) obj.get("name");
-                            if (name.equals(params[0])) {
-                                personTrue = true;
+                            if (name.equals(params[0])) { //valid name
+                                if (!correctGuesses.contains(name)) {  //did we already guess it?
+                                    personTrue = true;
+                                }
                             }
                         }
                     } else {
@@ -836,27 +865,43 @@ public static Properties properties = new Properties();
             TextView tText = (TextView) findViewById(R.id.timeBox);
 
             public void onTick(long millisUntilFinished) {
-
+                timerIsRunning = true;
                 tText.setText(formatTime(millisUntilFinished));
             }
 
             public void onFinish() {
-                tText.setText("Time's Up!");
-                Button search = (Button) findViewById(R.id.searchButton);
-                search.setEnabled(false);
-                clockSound.pause();
-                clockSound.seekTo(0);
-                endSound.start();
-                hideKeyboard();
-
-                if (lastTurn) {
-                    findViewById(R.id.finishPanel).setVisibility(View.VISIBLE);
-                } else {
-                    findViewById(R.id.completePanel).setVisibility(View.VISIBLE);
-                }
-
+                timerIsRunning = false;
+                turnOver();
             }
         }.start();
+    }
+
+    public void turnOver() {
+        timeTrack.cancel();
+        TextView tText = (TextView) findViewById(R.id.timeBox);
+        tText.setText("Time's Up!");
+        Button search = (Button) findViewById(R.id.searchButton);
+        search.setEnabled(false);
+        clockSound.pause();
+        clockSound.seekTo(0);
+        endSound.start();
+        hideKeyboard();
+
+        //check guesses for achievement
+        if (correctGuesses.size() >= 5){
+            Games.Achievements.unlock(mGoogleApiClient, getResources().getString(R.string.achievement_five_spot));
+        }
+
+        if (correctGuesses.size() >= 10){
+            Games.Achievements.unlock(mGoogleApiClient, getResources().getString(R.string.achievement_titanic_ten));
+        }
+
+
+        if (lastTurn) {
+            findViewById(R.id.finishPanel).setVisibility(View.VISIBLE);
+        } else {
+            findViewById(R.id.completePanel).setVisibility(View.VISIBLE);
+        }
     }
 
     // Update the visibility based on what state we're in.
@@ -1156,7 +1201,7 @@ public static Properties properties = new Properties();
     private boolean isScoreResultValid(final Leaderboards.LoadPlayerScoreResult scoreResult) {
         return scoreResult != null && GamesStatusCodes.STATUS_OK == scoreResult.getStatus().getStatusCode() && scoreResult.getScore() != null;
     }
-           
+
     public void processWin(Leaderboards.LoadPlayerScoreResult result) {
         long curScore = 0;
         if (isScoreResultValid(result)) curScore = result.getScore().getRawScore();

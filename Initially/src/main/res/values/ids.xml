@@ -2,4 +2,8 @@
     <!-- Insert your app id from the Developer Consoles -->
     <string name="app_id">985413759708</string>
     <integer name="turn_time">90000</integer>
+    <string name="achievement_five_spot">CgkI3OXy-dYcEAIQAw</string>
+    <string name="achievement_titanic_ten">CgkI3OXy-dYcEAIQBA</string>
+    <string name="achievement_first_win">CgkI3OXy-dYcEAIQBQ</string>
+    <string name="leaderboard_number_of_wins">CgkI3OXy-dYcEAIQAg</string>
 </resources>

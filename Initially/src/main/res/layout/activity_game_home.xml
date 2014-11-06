@@ -73,7 +73,7 @@
 
         <LinearLayout
             android:orientation="horizontal"
-            android:layout_width="wrap_content"
+            android:layout_width="fill_parent"
             android:layout_height="wrap_content">
             <EditText
                 android:layout_width="200dp"
@@ -86,7 +86,16 @@
                 android:text="GO"
                 android:id="@+id/searchButton"
                 android:textSize="14dp" />
-
+            <Space
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+            <Button
+                android:layout_width="100dp"
+                android:layout_height="48dp"
+                android:text="Give Up"
+                android:id="@+id/giveupButton"
+                android:textSize="14dp" />
         </LinearLayout>
 
         <LinearLayout
@@ -172,31 +181,38 @@
                 android:textAppearance="@style/HelpText.Caption" />
 
             <Button
-                android:id="@+id/sign_out_button"
-                android:layout_width="200dp"
-                android:layout_height="wrap_content"
-                android:text="@string/sign_out" />
-
-            <Button
                 android:id="@+id/startMatchButton"
-                android:layout_width="200dp"
+                android:layout_width="250dp"
                 android:layout_height="wrap_content"
                 android:onClick="onStartMatchClicked"
                 android:text="@string/start_match" />
 
             <Button
                 android:id="@+id/checkGamesButton"
-                android:layout_width="200dp"
+                android:layout_width="250dp"
                 android:layout_height="wrap_content"
                 android:onClick="onCheckGamesClicked"
                 android:text="@string/check_games" />
 
             <Button
                 android:id="@+id/checkLeadersButton"
-                android:layout_width="200dp"
+                android:layout_width="250dp"
                 android:layout_height="wrap_content"
                 android:onClick="onViewLeadersClicked"
                 android:text="@string/view_leaders" />
+
+            <Button
+                android:id="@+id/viewAchieveButton"
+                android:layout_width="250dp"
+                android:layout_height="wrap_content"
+                android:onClick="onViewAchieveClicked"
+                android:text="@string/view_achieve" />
+
+            <Button
+                android:id="@+id/sign_out_button"
+                android:layout_width="250dp"
+                android:layout_height="wrap_content"
+                android:text="@string/sign_out" />
         </LinearLayout>
     </RelativeLayout>
 
