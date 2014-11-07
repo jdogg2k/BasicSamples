@@ -9,13 +9,17 @@ import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.os.Handler;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.view.inputmethod.InputMethodManager;
 
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -74,6 +78,7 @@ public class GameHome extends Activity
     boolean personTrue = false;
     char initial1;
     char initial2;
+    String gameInitials;
     private GuessesAdapter adapter;
     private MediaPlayer clockSound;
     private MediaPlayer correctSound;
@@ -85,6 +90,9 @@ public class GameHome extends Activity
     private int turnTime;
     private CountDownTimer timeTrack;
     private boolean lastTurn;
+    private Animation animFadeIn;
+    private Animation animFadeOut;
+    int initGenCount;
 
     public static final String TAG = "InitialActivity";
 
@@ -123,6 +131,10 @@ public class GameHome extends Activity
 
     // How long to show toasts.
     final static int TOAST_DELAY = Toast.LENGTH_SHORT;
+
+    public TextView i1;
+    public TextView i2;
+    public TextView generatorText;
 
     // Should I be showing the turn API?
     public boolean isDoingTurn = false;
@@ -204,7 +216,12 @@ public class GameHome extends Activity
         highSound = MediaPlayer.create(this, R.raw.triumph);
 
         turnTime = getApplicationContext().getResources().getInteger(R.integer.turn_time);
+        i1 = (TextView) findViewById(R.id.initial1);
+        i2 = (TextView) findViewById(R.id.initial2);
+        generatorText = (TextView) findViewById(R.id.generatorTitle);
 
+        animFadeIn = AnimationUtils.loadAnimation(this, R.anim.fade_in);
+        animFadeOut = AnimationUtils.loadAnimation(this, R.anim.fade_out);
     }
 
     @Override
@@ -286,20 +303,130 @@ public class GameHome extends Activity
         setViewVisibility();
     }
 
-    public void setInitials(String initialData){
-        if (initialData.equals("new")){
-            initialData = getRandomLetters();
+    public void setRandomLetter(){
+        Random rnd = new Random();
+        String randomLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        char newChar = randomLetters.charAt(rnd.nextInt(randomLetters.length()));
+        if (initGenCount == 0) {
+            i1.setText(String.valueOf(newChar));
+        } else {
+            i2.setText(String.valueOf(newChar));
+        }
+    }
+
+    public void setInitials(){
+        initGenCount = 0;
+        if (gameInitials.equals("new")){
+            gameInitials = getRandomLetters();
         } else {
             //set Initials from saved data
-            String initialRaw = initialData.replace(".","").replace(" ","");
+            String initialRaw = gameInitials.replace(".","").replace(" ","");
             initial1 = initialRaw.charAt(0);
             initial2 = initialRaw.charAt(1);
         }
-        adapter.clear();
-        EditText uInput = (EditText) findViewById(R.id.searchName);
-        uInput.setText("");
-        TextView uText = (TextView) findViewById(R.id.textInitials);
-        uText.setText(initialData);
+        generatorText.setText("Generating Game Data");
+        LinearLayout i1lay = (LinearLayout) findViewById(R.id.initialslayout);
+        i1lay.setVisibility(View.VISIBLE);
+        i1lay.startAnimation(animFadeIn);
+        initialAnimate();
+    }
+
+    public void initialAnimate() {
+
+        final Thread letterMix = new Thread() {
+
+            @Override
+            public void run() {
+                try {
+                    while (!isInterrupted()) {
+                        Thread.sleep(100);
+                        runOnUiThread(new Runnable() {
+
+                            @Override
+                            public void run() {
+                                // update TextView here!
+                                setRandomLetter();
+                            }
+                        });
+                    }
+                } catch (InterruptedException e) {
+                    Toast.makeText(getApplicationContext(), e.getMessage(), TOAST_DELAY).show();
+                }
+            }
+        };
+
+        letterMix.start();
+        CountDownTimer ct = new CountDownTimer(2200, 1000) {
+
+
+            public void onTick(long millisUntilFinished) {
+
+            }
+
+            public void onFinish() {
+                letterMix.interrupt();
+
+                if (initGenCount == 0) {
+                    i1.setText(String.valueOf(initial1) + ".");
+                } else {
+                    i2.setText(String.valueOf(initial2) + ".");
+                    generatorText.setText("Starting Match");
+                }
+
+
+                    final Handler h2 = new Handler();
+                    h2.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (initGenCount == 0) {
+                                initGenCount++;
+                                initialAnimate();
+                            } else {
+                                endLetterAnimation();
+                            }
+                        }
+                    }, 600);
+                }
+
+
+        };
+        ct.start();
+
+    }
+
+    public void endLetterAnimation(){
+
+        LinearLayout i1lay = (LinearLayout) findViewById(R.id.initialslayout);
+
+        Animation.AnimationListener animationOutListener
+                = new Animation.AnimationListener(){
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                // TODO Auto-generated method stub
+                LinearLayout i1lay = (LinearLayout) findViewById(R.id.initialslayout);
+                i1lay.setVisibility(View.INVISIBLE);
+
+                if (isDoingTurn) {
+                    findViewById(R.id.gameplay_layout).setVisibility(View.VISIBLE);
+                    turnReset();
+                }
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+                // TODO Auto-generated method stub
+
+            }
+
+            @Override
+            public void onAnimationStart(Animation animation) {
+                // TODO Auto-generated method stub
+
+            }};
+
+        animFadeOut.setAnimationListener(animationOutListener);
+        i1lay.startAnimation(animFadeOut);
     }
 
     // Displays your inbox. You will get back onActivityResult where
@@ -607,10 +734,13 @@ public class GameHome extends Activity
             case TurnBasedMatch.MATCH_TURN_STATUS_MY_TURN:
                 mTurnData = GameTurn.unpersist(mMatch.getData());
                 setGameplayUI();
+
+                gameInitials = "";
+
                 if (mTurnData.turnCounter == 0){
-                    setInitials("new");
+                    gameInitials = "new";
                 } else {
-                    setInitials(mTurnData.initials);
+                    gameInitials = mTurnData.initials;
                     if (myParticipantId.equals("p_2")) {
                         opponentGuesses = mTurnData.p1_guesses;
                     } else {
@@ -618,9 +748,9 @@ public class GameHome extends Activity
                     }
                     lastTurn = true;
                 }
-                if (isDoingTurn) {
-                    turnReset();
-                }
+
+                setInitials();
+
                 return;
             case TurnBasedMatch.MATCH_TURN_STATUS_THEIR_TURN:
                 // Should return results.
@@ -772,6 +902,12 @@ public class GameHome extends Activity
 
     public void turnReset(){
 
+        adapter.clear();
+        EditText uInput = (EditText) findViewById(R.id.searchName);
+        uInput.setText("");
+        TextView uText = (TextView) findViewById(R.id.textInitials);
+        uText.setText(gameInitials);
+
         correctGuesses = new ArrayList<String>();
         pFinalScore = 0;
         oFinalScore = 0;
@@ -860,8 +996,6 @@ public class GameHome extends Activity
 
         if (isDoingTurn) {
             findViewById(R.id.matchup_layout).setVisibility(View.GONE);
-            findViewById(R.id.gameplay_layout).setVisibility(View.VISIBLE);
-
         } else {
             findViewById(R.id.matchup_layout).setVisibility(View.VISIBLE);
             findViewById(R.id.gameplay_layout).setVisibility(View.GONE);
