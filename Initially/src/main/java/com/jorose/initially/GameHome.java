@@ -303,6 +303,16 @@ public class GameHome extends Activity
         setViewVisibility();
     }
 
+    public void showToast(final String toast)
+    {
+        runOnUiThread(new Runnable() {
+            public void run()
+            {
+                Toast.makeText(GameHome.this, toast, TOAST_DELAY).show();
+            }
+        });
+    }
+
     public void setRandomLetter(){
         Random rnd = new Random();
         String randomLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -350,46 +360,45 @@ public class GameHome extends Activity
                         });
                     }
                 } catch (InterruptedException e) {
-                    Toast.makeText(getApplicationContext(), e.getMessage(), TOAST_DELAY).show();
+                    //showToast(e.getMessage());
                 }
             }
         };
 
         letterMix.start();
-        CountDownTimer ct = new CountDownTimer(2200, 1000) {
 
-
+         final CountDownTimer ct2 = new CountDownTimer(2200, 1000) {
             public void onTick(long millisUntilFinished) {
 
             }
 
             public void onFinish() {
                 letterMix.interrupt();
-
-                if (initGenCount == 0) {
-                    i1.setText(String.valueOf(initial1) + ".");
-                } else {
-                    i2.setText(String.valueOf(initial2) + ".");
-                    generatorText.setText("Starting Match");
-                }
-
-
-                    final Handler h2 = new Handler();
-                    h2.postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (initGenCount == 0) {
-                                initGenCount++;
-                                initialAnimate();
-                            } else {
-                                endLetterAnimation();
-                            }
-                        }
-                    }, 600);
-                }
-
+                i2.setText(String.valueOf(initial2) + ".");
+                final Handler h2 = new Handler();
+                h2.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                       endLetterAnimation();
+                    }
+                }, 600);
+            }
 
         };
+
+        CountDownTimer ct = new CountDownTimer(2200, 1000) {
+            public void onTick(long millisUntilFinished) {
+
+            }
+
+            public void onFinish() {
+                i1.setText(String.valueOf(initial1) + ".");
+                initGenCount++;
+                ct2.start();
+            }
+
+        };
+
         ct.start();
 
     }
