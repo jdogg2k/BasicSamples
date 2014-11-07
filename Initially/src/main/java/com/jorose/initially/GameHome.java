@@ -758,7 +758,9 @@ public class GameHome extends Activity
                     lastTurn = true;
                 }
 
-                setInitials();
+                if (isDoingTurn) {
+                    setInitials();
+                }
 
                 return;
             case TurnBasedMatch.MATCH_TURN_STATUS_THEIR_TURN:
