@@ -166,6 +166,18 @@
                 android:text="Give Up"
                 android:id="@+id/giveupButton"
                 android:textSize="14dp" />
+            <Button
+                android:id="@+id/finishTurnButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="End Game"
+                android:onClick="onFinishClicked" android:visibility="gone"/>
+            <Button
+                android:id="@+id/submitTurnButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="End Turn"
+                android:onClick="onDoneClicked" android:visibility="gone"/>
         </LinearLayout>
 
         <LinearLayout
@@ -186,37 +198,10 @@
                 android:singleLine="true" />
         </LinearLayout>
 
-        <RelativeLayout
-            android:id="@+id/completePanel"
-            android:visibility="gone"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:layout_gravity="center_horizontal" >
-            <Button
-                android:layout_centerInParent="true"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Submit Names" android:height="48dp"
-                android:onClick="onDoneClicked"/>
-        </RelativeLayout>
-
-        <RelativeLayout
-            android:id="@+id/finishPanel"
-            android:visibility="gone"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:layout_gravity="center_horizontal" >
-            <Button
-                android:layout_centerInParent="true"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Finish Turn" android:height="48dp"
-                android:onClick="onFinishClicked"/>
-        </RelativeLayout>
-
-        <ListView android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/mainListView">
-        </ListView>
-
+            <ListView android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:id="@+id/mainListView" android:layout_weight="0.7">
+            </ListView>
 
     </LinearLayout>
 

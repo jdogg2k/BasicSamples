@@ -6,9 +6,11 @@ package com.jorose.initially;
 public class Guess {
     public String name;
     public boolean result;
+    public String personID;
 
-    public Guess(String name, boolean result) {
+    public Guess(String name, boolean result, String personID) {
         this.name = name;
         this.result = result;
+        this.personID = personID;
     }
 }

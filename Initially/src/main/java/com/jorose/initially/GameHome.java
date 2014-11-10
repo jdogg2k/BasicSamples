@@ -5,6 +5,8 @@ import android.app.DialogFragment;
 import android.app.FragmentManager;
 import android.content.Context;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.MediaPlayer;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -19,6 +21,7 @@ import android.view.inputmethod.InputMethodManager;
 
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
@@ -36,6 +39,7 @@ import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -85,6 +89,7 @@ public class GameHome extends Activity
     private MediaPlayer wrongSound;
     private MediaPlayer endSound;
     private MediaPlayer highSound;
+    private MediaPlayer generateSound;
     private ArrayList<String> correctGuesses;
     private String opponentGuesses;
     private int turnTime;
@@ -119,6 +124,7 @@ public class GameHome extends Activity
     public int pFinalScore = 0;
     public int oFinalScore = 0;
     private boolean timerIsRunning = false;
+    public String personID;
 
     private AlertDialog mAlertDialog;
 
@@ -185,11 +191,12 @@ public class GameHome extends Activity
         ListView list = (ListView) this.findViewById(R.id.mainListView);
         list.setAdapter(adapter);
 
-        Button search = (Button) findViewById(R.id.searchButton);
+        final Button search = (Button) findViewById(R.id.searchButton);
         search.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View v) {
+                search.setEnabled(false);
                 EditText uText = (EditText) findViewById(R.id.searchName);
                 pSearch = new PersonSearch();
                 pSearch.execute(uText.getText().toString());
@@ -214,6 +221,7 @@ public class GameHome extends Activity
         wrongSound = MediaPlayer.create(this, R.raw.wrong);
         endSound = MediaPlayer.create(this, R.raw.end);
         highSound = MediaPlayer.create(this, R.raw.triumph);
+        generateSound = MediaPlayer.create(this, R.raw.musical_synth);
 
         turnTime = getApplicationContext().getResources().getInteger(R.integer.turn_time);
         i1 = (TextView) findViewById(R.id.initial1);
@@ -343,6 +351,8 @@ public class GameHome extends Activity
 
     public void initialAnimate() {
 
+        generateSound.start();
+
         final Thread letterMix = new Thread() {
 
             @Override
@@ -367,7 +377,7 @@ public class GameHome extends Activity
 
         letterMix.start();
 
-         final CountDownTimer ct2 = new CountDownTimer(2200, 1000) {
+         final CountDownTimer ct2 = new CountDownTimer(1300, 1000) {
             public void onTick(long millisUntilFinished) {
 
             }
@@ -386,7 +396,7 @@ public class GameHome extends Activity
 
         };
 
-        CountDownTimer ct = new CountDownTimer(2200, 1000) {
+        CountDownTimer ct = new CountDownTimer(1300, 1000) {
             public void onTick(long millisUntilFinished) {
 
             }
@@ -418,6 +428,8 @@ public class GameHome extends Activity
 
                 if (isDoingTurn) {
                     findViewById(R.id.gameplay_layout).setVisibility(View.VISIBLE);
+                    generateSound.pause();
+                    generateSound.reset();
                     turnReset();
                 }
             }
@@ -811,6 +823,8 @@ public class GameHome extends Activity
                             if (name.equals(params[0])) { //valid name
                                 if (!correctGuesses.contains(name)) {  //did we already guess it?
                                     personTrue = true;
+                                    //set Image ID
+                                    personID = (String) obj.get("mid");
                                 }
                             }
                         }
@@ -835,6 +849,8 @@ public class GameHome extends Activity
             try{
 
                 EditText uText = (EditText) findViewById(R.id.searchName);
+                Button search = (Button) findViewById(R.id.searchButton);
+                search.setEnabled(true);
 
                 if (personTrue) {
                     correctSound.start();
@@ -843,7 +859,7 @@ public class GameHome extends Activity
                     wrongSound.start();
                 }
 
-                Guess newGuess = new Guess(uText.getText().toString(), personTrue);
+                Guess newGuess = new Guess(uText.getText().toString(), personTrue, personID);
                 adapter.insert(newGuess, 0);
                 uText.setText("");
 
@@ -926,11 +942,13 @@ public class GameHome extends Activity
         Button search = (Button) findViewById(R.id.searchButton);
         search.setEnabled(true);
 
-        RelativeLayout completionPanel = (RelativeLayout) findViewById(R.id.completePanel);
-        completionPanel.setVisibility(View.INVISIBLE);
+        Button completionButton = (Button) findViewById(R.id.submitTurnButton);
+        completionButton.setVisibility(View.GONE);
 
-        RelativeLayout finishPanel = (RelativeLayout) findViewById(R.id.finishPanel);
-        finishPanel.setVisibility(View.INVISIBLE);
+        Button finishButton = (Button) findViewById(R.id.finishTurnButton);
+        finishButton.setVisibility(View.GONE);
+
+        findViewById(R.id.giveupButton).setVisibility(View.VISIBLE);
 
         clockSound.start();
 
@@ -976,11 +994,12 @@ public class GameHome extends Activity
             highSound.start();
         }
 
+        findViewById(R.id.giveupButton).setVisibility(View.GONE);
 
         if (lastTurn) {
-            findViewById(R.id.finishPanel).setVisibility(View.VISIBLE);
+            findViewById(R.id.finishTurnButton).setVisibility(View.VISIBLE);
         } else {
-            findViewById(R.id.completePanel).setVisibility(View.VISIBLE);
+            findViewById(R.id.submitTurnButton).setVisibility(View.VISIBLE);
         }
     }
 
